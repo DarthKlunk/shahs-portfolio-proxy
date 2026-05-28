@@ -1,7 +1,17 @@
 const https = require("https");
 const http = require("http");
+const fs = require("fs");
+const path = require("path");
 
 const PORT = process.env.PORT || 3001;
+const DATA_FILE = path.join(__dirname, "portfolio_data.json");
+
+function loadData() {
+  try { return JSON.parse(fs.readFileSync(DATA_FILE, "utf8")); } catch { return null; }
+}
+function saveData(data) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data), "utf8");
+}
 
 // Fetch from Yahoo Finance with proper headers
 function yahooFetch(symbol) {
@@ -35,7 +45,7 @@ function yahooFetch(symbol) {
 const server = http.createServer(async (req, res) => {
   // CORS — allow all origins so the browser app can call this freely
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Content-Type", "application/json");
 
@@ -135,6 +145,33 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(502);
       res.end(JSON.stringify({ error: "History fetch failed: " + err.message }));
     }
+    return;
+  }
+
+  // GET /data — load all portfolios
+  if (url.pathname === "/data" && req.method === "GET") {
+    const data = loadData();
+    if (!data) { res.writeHead(404); res.end(JSON.stringify({ error: "No data yet" })); return; }
+    res.writeHead(200);
+    res.end(JSON.stringify(data));
+    return;
+  }
+
+  // POST /data — save all portfolios
+  if (url.pathname === "/data" && req.method === "POST") {
+    let body = "";
+    req.on("data", chunk => body += chunk);
+    req.on("end", () => {
+      try {
+        const data = JSON.parse(body);
+        saveData(data);
+        res.writeHead(200);
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: "Invalid JSON" }));
+      }
+    });
     return;
   }
 
