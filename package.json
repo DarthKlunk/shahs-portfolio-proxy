@@ -1,0 +1,12 @@
+{
+  "name": "shahs-portfolio-proxy",
+  "version": "1.0.0",
+  "description": "Price proxy for Shah's Portfolio app",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
